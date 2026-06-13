@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shop Invoicing</title>
+<style>
+  :root{
+    --bg:#12161a;
+    --panel:#1b2229;
+    --panel-alt:#242c35;
+    --border:#333e49;
+    --text:#e9e7e1;
+    --muted:#8d98a4;
+    --accent:#f4b400;
+    --accent-text:#1a1206;
+    --link:#6aa7e0;
+    --danger:#d9534f;
+    --ok:#4caf6f;
+    --font-display:'Helvetica Neue',Arial,sans-serif;
+    --font-data:ui-monospace,SFMono-Regular,'Roboto Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    font-size:15px;
+    line-height:1.4;
+    padding-bottom:60px;
+  }
+  a{color:var(--link)}
+  h1,h2,h3,label,.eyebrow,th,.tabbtn,button{
+    font-family:var(--font-display);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-weight:800;
+  }
+  header{
+    background:var(--panel);
+    border-bottom:3px solid var(--accent);
+    padding:14px 16px;
+    position:sticky;top:0;z-index:50;
+  }
+  header h1{margin:0;font-size:18px;color:var(--accent);letter-spacing:.12em}
+  header .sub{font-size:11px;color:var(--muted);text-transform:none;letter-spacing:normal;font-family:inherit;font-weight:400;margin-top:2px}
+  nav{display:flex;gap:0;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:53px;z-index:49;overflow-x:auto}
+  .tabbtn{
+    flex:1;min-width:90px;background:none;border:none;color:var(--muted);
+    padding:11px 6px;font-size:12px;cursor:pointer;border-bottom:3px solid transparent;
+  }
+  .tabbtn.active{color:var(--accent);border-bottom-color:var(--accent)}
+  main{padding:14px;max-width:780px;margin:0 auto}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px;margin-bottom:14px}
+  .eyebrow{font-size:11px;color:var(--accent);margin:0 0 10px 0;letter-spacing:.14em}
+  label{display:block;font-size:10.5px;color:var(--muted);margin:10px 0 4px;letter-spacing:.08em}
+  input,select,textarea{
+    width:100%;background:var(--panel-alt);border:1px solid var(--border);
+    color:var(--text);padding:9px 10px;border-radius:4px;font-size:15px;
+    font-family:inherit;
+  }
+  input[data-mono],.mono{font-family:var(--font-data)}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .row > *{flex:1;min-width:120px}
+  button{
+    cursor:pointer;border-radius:4px;border:1px solid var(--border);
+    background:var(--panel-alt);color:var(--text);padding:10px 14px;font-size:12px;
+  }
+  button.primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+  button.danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+  button.ghost{background:none}
+  button:disabled{opacity:.5;cursor:default}
+  button.small{padding:6px 9px;font-size:11px}
+  .stack{display:flex;flex-direction:column;gap:8px}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px;text-transform:none;letter-spacing:normal;font-family:inherit;font-weight:400}
+  .err{color:var(--danger);font-size:12px;text-transform:none;letter-spacing:normal;font-family:inherit;font-weight:600;margin-top:6px}
+  .ok{color:var(--ok);font-size:12px;text-transform:none;letter-spacing:normal;font-family:inherit;font-weight:600;margin-top:6px}
+  .badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:3px;letter-spacing:.08em;font-family:var(--font-display);text-transform:uppercase;font-weight:800}
+  .badge.fleet{background:var(--link);color:#0c1a26}
+  .badge.paid{background:var(--ok);color:#06150a}
+  .badge.unpaid{background:var(--danger);color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border-bottom:1px solid var(--border);padding:7px 5px;text-align:left;font-size:11px}
+  th{color:var(--muted);font-weight:800}
+  td.num,th.num{text-align:right;font-family:var(--font-data)}
+  td input,td select{padding:6px 7px;font-size:13px}
+  .lineitem-grid{display:grid;grid-template-columns:1fr 56px 70px 70px 28px;gap:5px;align-items:end;margin-bottom:6px}
+  .lineitem-grid label{display:none}
+  .lineitem-grid input{font-size:13px;padding:7px 6px}
+  .totals{margin-top:10px;border-top:1px solid var(--border);padding-top:10px}
+  .totals .line{display:flex;justify-content:space-between;font-size:14px;padding:3px 0}
+  .totals .grand{font-size:20px;color:var(--accent);font-family:var(--font-data);font-weight:800;border-top:1px solid var(--border);margin-top:6px;padding-top:8px}
+  .list-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer}
+  .list-item:last-child{border-bottom:none}
+  .list-item:hover{background:var(--panel-alt)}
+  .list-item .name{font-weight:700}
+  .list-item .meta{font-size:11px;color:var(--muted);font-family:var(--font-data);text-transform:none;letter-spacing:normal;font-weight:400}
+  .search{margin-bottom:10px}
+  .vehicle-chip{display:inline-flex;align-items:center;gap:6px;background:var(--panel-alt);border:1px solid var(--border);border-radius:4px;padding:5px 9px;margin:3px 4px 3px 0;font-size:11px;font-family:var(--font-data);cursor:pointer}
+  .vehicle-chip:hover{border-color:var(--accent)}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:20px 10px}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;max-width:600px;width:100%}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--muted);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:6px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .empty{color:var(--muted);font-size:12px;text-transform:none;letter-spacing:normal;font-family:inherit;font-weight:400;padding:20px 0;text-align:center}
+  .lookup-action{border:2px solid var(--accent);border-radius:6px;padding:12px;margin-top:8px;background:rgba(244,180,0,.07)}
+  .lookup-action .lt{font-size:11px;color:var(--accent);margin-bottom:6px;letter-spacing:.1em}
+  .lookup-action p{margin:4px 0;font-size:12px;text-transform:none;letter-spacing:normal;font-family:inherit;font-weight:400}
+  .lookup-action .row{margin-top:8px}
+  .banner{background:var(--danger);color:#fff;padding:10px 14px;font-size:12px;text-transform:none;letter-spacing:normal;font-family:inherit;font-weight:600}
+
+  /* ---- Printable work order ---- */
+  #printArea{display:none}
+  @media print{
+    body *{display:none !important}
+    #printArea{display:block !important}
+    #printArea *{display:revert !important}
+    body{background:#fff;color:#000;padding:0}
+    .ticket{padding:0}
+    .ticket-head{
+      display:flex;justify-content:space-between;align-items:flex-start;
+      border-bottom:4px double #000;padding-bottom:10px;margin-bottom:10px;
+    }
+    .ticket-head h1{font-size:22px;margin:0;letter-spacing:.1em}
+    .ticket-num{font-family:var(--font-data);font-size:13px;border:2px solid #000;padding:6px 10px;text-align:center}
+    .ticket-num b{display:block;font-size:20px}
+    .ticket-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12px;margin-bottom:10px}
+    .ticket-grid .lbl{font-weight:800;text-transform:uppercase;font-size:9px;letter-spacing:.1em;color:#555}
+    .ticket table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+    .ticket th,.ticket td{border-bottom:1px solid #000;padding:4px;text-align:left}
+    .ticket td.num,.ticket th.num{text-align:right;font-family:var(--font-data)}
+    .ticket .totals{margin-top:8px;width:260px;margin-left:auto}
+    .ticket .totals .line{display:flex;justify-content:space-between;font-size:12px;padding:2px 0}
+    .ticket .totals .grand{font-size:18px;font-weight:800;border-top:2px solid #000;padding-top:4px;margin-top:4px}
+    .stamp{
+      display:inline-block;border:3px solid;padding:4px 14px;font-size:16px;font-weight:800;
+      letter-spacing:.15em;transform:rotate(-6deg);margin-top:10px;
+    }
+    .stamp.paid{color:#1a7a3a;border-color:#1a7a3a}
+    .stamp.unpaid{color:#b3261e;border-color:#b3261e}
+    .notes-box{margin-top:10px;font-size:11px;border-top:1px solid #999;padding-top:6px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="shopNameHdr">SHOP INVOICING</h1>
+  <div class="sub" id="shopSubHdr">Mobile road service & fleet maintenance</div>
+</header>
+
+<nav>
+  <button class="tabbtn active" data-tab="invoice">New Invoice</button>
+  <button class="tabbtn" data-tab="history">Invoices</button>
+  <button class="tabbtn" data-tab="customers">Customers</button>
+  <button class="tabbtn" data-tab="settings">Settings</button>
+</nav>
+
+<div id="storageBanner"></div>
+
+<main>
+
+  <!-- ============ NEW INVOICE ============ -->
+  <section id="tab-invoice">
+    <div class="panel">
+      <div class="eyebrow">Carrier · USDOT</div>
+      <div class="row">
+        <div>
+          <label>USDOT Number</label>
+          <input id="usdot" data-mono inputmode="numeric" placeholder="e.g. 1234567">
+        </div>
+        <div style="flex:0 0 auto;align-self:flex-end">
+          <button class="primary" id="btnLookupDot" type="button">Lookup</button>
+        </div>
+      </div>
+      <div id="dotStatus"></div>
+
+      <label>Legal Name</label>
+      <input id="custName" placeholder="Carrier legal name">
+      <label>DBA</label>
+      <input id="custDba" placeholder="Doing-business-as name (optional)">
+      <label>Address</label>
+      <input id="custAddr" placeholder="Street">
+      <div class="row">
+        <input id="custCity" placeholder="City">
+        <input id="custState" placeholder="State" style="max-width:70px">
+        <input id="custZip" placeholder="ZIP" style="max-width:100px" data-mono>
+      </div>
+      <label>Phone</label>
+      <input id="custPhone" placeholder="Phone" data-mono>
+      <div class="hint" id="dotMeta"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="btnSaveCarrier" type="button">Save Carrier to Records</button>
+      </div>
+      <div id="carrierSaveStatus"></div>
+    </div>
+
+    <div class="panel">
+      <div class="eyebrow">Vehicle</div>
+      <div class="row">
+        <div>
+          <label>Unit #</label>
+          <input id="unitNum" data-mono placeholder="Fleet unit number">
+        </div>
+        <div>
+          <label>VIN</label>
+          <input id="vin" data-mono placeholder="17-character VIN" maxlength="17" style="text-transform:uppercase">
+        </div>
+        <div style="flex:0 0 auto;align-self:flex-end">
+          <button class="primary" id="btnDecodeVin" type="button">Decode</button>
+        </div>
+      </div>
+      <div id="vinStatus"></div>
+      <div id="vinDecoded" class="hint"></div>
+      <div id="vehicleChips"></div>
+    </div>
+
+    <div class="panel">
+      <div class="eyebrow">Service</div>
+      <div class="row">
+        <div>
+          <label>Date</label>
+          <input id="svcDate" type="date">
+        </div>
+        <div>
+          <label>Service Location</label>
+          <input id="svcLoc" placeholder="Roadside / yard address">
+        </div>
+      </div>
+
+      <label style="margin-top:14px">Line Items</label>
+      <div id="lineHeader" class="lineitem-grid" style="margin-bottom:2px">
+        <div class="hint" style="text-transform:uppercase;font-size:9px">Description</div>
+        <div class="hint" style="text-transform:uppercase;font-size:9px;text-align:center">Qty/Hrs</div>
+        <div class="hint" style="text-transform:uppercase;font-size:9px;text-align:center">Rate</div>
+        <div class="hint" style="text-transform:uppercase;font-size:9px;text-align:right">Amount</div>
+        <div></div>
+      </div>
+      <div id="lineItems"></div>
+      <button class="ghost small" id="btnAddLine" type="button">+ Add line</button>
+
+      <div class="totals">
+        <div class="line"><span>Subtotal</span><span class="mono" id="subtotalOut">$0.00</span></div>
+        <div class="line">
+          <span>Tax %</span>
+          <input id="taxRate" data-mono style="width:70px;text-align:right" type="number" step="0.01" min="0">
+        </div>
+        <div class="line"><span>Tax</span><span class="mono" id="taxOut">$0.00</span></div>
+        <div class="line grand"><span>Total</span><span class="mono" id="totalOut">$0.00</span></div>
+      </div>
+
+      <label style="margin-top:14px">Notes</label>
+      <textarea id="notes" rows="2" style="text-transform:none;font-family:inherit"></textarea>
+
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="btnSaveInvoice" type="button">Save Invoice</button>
+        <button id="btnNewInvoice" type="button">Clear</button>
+      </div>
+      <div id="saveStatus"></div>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section id="tab-history" style="display:none">
+    <div class="panel">
+      <div class="eyebrow">Invoice History</div>
+      <input class="search" id="historySearch" placeholder="Search by invoice #, USDOT, name, VIN, unit#">
+      <div id="historyList"><div class="empty">No invoices yet.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ CUSTOMERS ============ -->
+  <section id="tab-customers" style="display:none">
+    <div class="panel">
+      <div class="eyebrow">Customer Records</div>
+      <input class="search" id="custSearch" placeholder="Search by name, USDOT, city">
+      <div id="customerList"><div class="empty">No customers saved yet.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="tab-settings" style="display:none">
+    <div class="panel">
+      <div class="eyebrow">Shop Info (appears on invoices)</div>
+      <label>Shop Name</label>
+      <input id="setShopName">
+      <label>Address</label>
+      <input id="setShopAddr">
+      <div class="row">
+        <input id="setShopCity" placeholder="City">
+        <input id="setShopState" placeholder="State" style="max-width:70px">
+        <input id="setShopZip" placeholder="ZIP" style="max-width:100px" data-mono>
+      </div>
+      <label>Phone</label>
+      <input id="setShopPhone" data-mono>
+      <label>Default Tax Rate %</label>
+      <input id="setTaxRate" data-mono type="number" step="0.01" min="0">
+      <label>Next Invoice #</label>
+      <input id="setNextInvoice" data-mono type="number" min="1">
+      <button class="primary" id="btnSaveSettings" type="button" style="margin-top:12px">Save Settings</button>
+      <div id="settingsStatus"></div>
+    </div>
+
+    <div class="panel">
+      <div class="eyebrow">Data</div>
+      <div class="hint">Invoices and customers are saved in this browser on this device. They stay between visits, but don't automatically sync to other devices. For multi-device sync (and your future commercial version), data would move to your backend server.</div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============ PRINT AREA ============ -->
+<div id="printArea">
+  <div class="ticket">
+    <div class="ticket-head">
+      <div>
+        <h1 id="pShopName">SHOP</h1>
+        <div id="pShopInfo" style="font-size:11px"></div>
+      </div>
+      <div class="ticket-num">
+        WORK ORDER
+        <b id="pInvoiceNum">—</b>
+        <span id="pDate"></span>
+      </div>
+    </div>
+    <div class="ticket-grid">
+      <div>
+        <div class="lbl">Bill To</div>
+        <div id="pCustName" style="font-weight:800"></div>
+        <div id="pCustAddr"></div>
+        <div id="pCustDot" class="mono"></div>
+      </div>
+      <div>
+        <div class="lbl">Vehicle</div>
+        <div id="pVehicle"></div>
+        <div id="pVin" class="mono"></div>
+        <div class="lbl" style="margin-top:6px">Service Location</div>
+        <div id="pLoc"></div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Description</th><th class="num">Qty/Hrs</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+      <tbody id="pLines"></tbody>
+    </table>
+    <div class="totals">
+      <div class="line"><span>Subtotal</span><span id="pSub"></span></div>
+      <div class="line"><span>Tax</span><span id="pTax"></span></div>
+      <div class="line grand"><span>Total</span><span id="pTotal"></span></div>
+    </div>
+    <div id="pStamp"></div>
+    <div class="notes-box" id="pNotes"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // ---------- storage helpers ----------
+  // Uses the browser's own localStorage, which works on any real website
+  // (Render, GoDaddy/dieselservice.io, etc.). Records are saved on the
+  // device's browser. All keys are namespaced with "dsi:" so they don't
+  // collide with anything else.
+  const NS = 'dsi:';
+  let storageOK = true;
+  try {
+    // confirm localStorage actually works (private mode can block it)
+    const t = NS + '__test__';
+    localStorage.setItem(t, '1');
+    localStorage.removeItem(t);
+  } catch (e) {
+    storageOK = false;
+  }
+
+  async function dbGet(key){
+    try{
+      const raw = localStorage.getItem(NS + key);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  async function dbSet(key, val){
+    try{
+      localStorage.setItem(NS + key, JSON.stringify(val));
+      return true;
+    }catch(e){ console.error('storage set failed', e); return false; }
+  }
+  async function dbList(prefix){
+    try{
+      const out = [];
+      const full = NS + (prefix || '');
+      for(let i=0; i<localStorage.length; i++){
+        const k = localStorage.key(i);
+        if(k && k.indexOf(full) === 0) out.push(k.slice(NS.length));
+      }
+      return out;
+    }catch(e){ return []; }
+  }
+  async function checkStorage(){
+    if(!storageOK){
+      $('storageBanner').innerHTML = `<div class="banner">This browser is blocking local storage (often happens in Private/Incognito mode). Records won't save. Open the app in a normal browser window.</div>`;
+    }
+  }
+
+  // ---------- state ----------
+  // Built-in backend so FMCSA lookups work automatically for everyone,
+  // with no Settings step. The Settings field can still override this.
+  const DEFAULT_BACKEND_URL = 'https://dieselservice-fmcsa.onrender.com';
+  let settings = { shopName:'', shopAddr:'', shopCity:'', shopState:'', shopZip:'', shopPhone:'', taxRate:0, nextInvoice:1001, fmcsaKey:'', backendUrl:'' };
+  let currentCustomer = null; // loaded/looked-up customer record
+  let lineItems = []; // {desc, qty, rate}
+  let editingInvoiceId = null;
+
+  const $ = id => document.getElementById(id);
+  const money = n => '$' + (Number(n)||0).toFixed(2);
+
+  // ---------- tabs ----------
+  document.querySelectorAll('.tabbtn').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('.tabbtn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      ['invoice','history','customers','settings'].forEach(t=>{
+        $('tab-'+t).style.display = (t===b.dataset.tab)?'':'none';
+      });
+      if(b.dataset.tab==='history') renderHistory();
+      if(b.dataset.tab==='customers') renderCustomers();
+    });
+  });
+
+  // ---------- line items ----------
+  function addLine(item){
+    lineItems.push(item || {desc:'', qty:1, rate:0});
+    renderLines();
+  }
+  function renderLines(){
+    const wrap = $('lineItems');
+    wrap.innerHTML = '';
+    lineItems.forEach((li, i)=>{
+      const row = document.createElement('div');
+      row.className = 'lineitem-grid';
+      row.innerHTML = `
+        <input data-li="desc" placeholder="Part / labor description" value="${escapeAttr(li.desc)}">
+        <input data-li="qty" type="number" step="0.01" value="${li.qty}" style="text-align:center">
+        <input data-li="rate" type="number" step="0.01" value="${li.rate}" style="text-align:center">
+        <div class="mono" style="text-align:right;align-self:center;font-size:13px">${money(li.qty*li.rate)}</div>
+        <button class="small ghost" data-rm style="padding:6px 8px">×</button>
+      `;
+      row.querySelector('[data-li="desc"]').addEventListener('input', e=>{ li.desc=e.target.value; });
+      row.querySelector('[data-li="qty"]').addEventListener('input', e=>{ li.qty=parseFloat(e.target.value)||0; renderLines(); calcTotals(); });
+      row.querySelector('[data-li="rate"]').addEventListener('input', e=>{ li.rate=parseFloat(e.target.value)||0; renderLines(); calcTotals(); });
+      row.querySelector('[data-rm]').addEventListener('click', ()=>{ lineItems.splice(i,1); renderLines(); calcTotals(); });
+      wrap.appendChild(row);
+    });
+    calcTotals();
+  }
+  $('btnAddLine').addEventListener('click', ()=> addLine());
+  $('taxRate').addEventListener('input', calcTotals);
+  function calcTotals(){
+    const sub = lineItems.reduce((s,li)=> s + (li.qty*li.rate), 0);
+    const taxPct = parseFloat($('taxRate').value)||0;
+    const tax = sub * taxPct/100;
+    $('subtotalOut').textContent = money(sub);
+    $('taxOut').textContent = money(tax);
+    $('totalOut').textContent = money(sub+tax);
+    return {sub, tax, total: sub+tax, taxPct};
+  }
+  function escapeAttr(s){ return String(s||'').replace(/"/g,'&quot;'); }
+  function escapeHtml(s){ return String(s||'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+
+  // ---------- USDOT lookup ----------
+  $('btnLookupDot').addEventListener('click', lookupUSDOT);
+  // Auto-pull as soon as a full USDOT is entered (no button press needed)
+  let dotTimer = null, lastAutoDot = '';
+  $('usdot').addEventListener('input', ()=>{
+    const dot = $('usdot').value.trim();
+    clearTimeout(dotTimer);
+    if(/^\d{5,8}$/.test(dot) && dot !== lastAutoDot){
+      dotTimer = setTimeout(()=>{ lastAutoDot = dot; lookupUSDOT(); }, 600);
+    }
+  });
+  $('usdot').addEventListener('blur', ()=>{
+    const dot = $('usdot').value.trim();
+    if(/^\d{2,8}$/.test(dot) && dot !== lastAutoDot){ lastAutoDot = dot; lookupUSDOT(); }
+  });
+  $('btnSaveCarrier').addEventListener('click', saveCarrier);
+  async function saveCarrier(){
+    const dot = $('usdot').value.trim();
+    const name = $('custName').value.trim();
+    const statusEl = $('carrierSaveStatus');
+    if(!/^\d{2,8}$/.test(dot) || !name){ statusEl.innerHTML = '<div class="err">Enter at least USDOT # and Legal Name first.</div>'; return; }
+    const rec = (currentCustomer && currentCustomer.usdot===dot) ? currentCustomer : { usdot: dot, vehicles:{} };
+    rec.legalName = name;
+    rec.dba = $('custDba').value.trim();
+    rec.addr = $('custAddr').value.trim();
+    rec.city = $('custCity').value.trim();
+    rec.state = $('custState').value.trim();
+    rec.zip = $('custZip').value.trim();
+    rec.phone = $('custPhone').value.trim();
+    if(!rec.vehicles) rec.vehicles = {};
+    const ok = await dbSet('customer:'+dot, rec);
+    currentCustomer = rec;
+    statusEl.innerHTML = ok
+      ? `<div class="ok">Saved. Typing DOT ${dot} will auto-fill this from now on.</div>`
+      : `<div class="err">Couldn't save — cloud storage unavailable right now.</div>`;
+  }
+  async function lookupUSDOT(){
+    const dot = $('usdot').value.trim();
+    const statusEl = $('dotStatus');
+    statusEl.innerHTML = '';
+    if(!/^\d{2,8}$/.test(dot)){ statusEl.innerHTML = '<div class="err">Enter a valid USDOT number.</div>'; return; }
+
+    // 1. local cache first (fleet repeat customer)
+    const cached = await dbGet('customer:'+dot);
+    if(cached){
+      currentCustomer = cached;
+      fillCustomerFields(cached);
+      statusEl.innerHTML = '<div class="ok">Loaded from saved records'+(cached.fmcsa? '.' : ' (not yet verified with FMCSA).')+'</div>';
+      renderVehicleChips(cached);
+      return;
+    }
+
+    statusEl.innerHTML = '<div class="hint"><span class="spin"></span>Looking up USDOT '+dot+'…</div>';
+
+    // PREFERRED: pull through the backend (no CORS issues).
+    // Uses the Settings URL if set, otherwise the built-in default.
+    const activeBackend = (settings.backendUrl && settings.backendUrl.trim()) || DEFAULT_BACKEND_URL;
+    if(activeBackend){
+      try{
+        const base = activeBackend.replace(/\/+$/,'');
+        const resp = await fetch(base + '/carrier/' + dot);
+        const out = await resp.json();
+        if(resp.status === 404){ throw {notFound:true}; }
+        if(!resp.ok || out.error) throw new Error(out.error || ('HTTP '+resp.status));
+        const rec = {
+          usdot: dot, legalName: out.legalName||'', dba: out.dba||'', addr: out.addr||'',
+          city: out.city||'', state: out.state||'', zip: out.zip||'', phone: out.phone||'',
+          mcNumber: out.mcNumber||'', safetyRating: out.safetyRating||'', powerUnits: out.powerUnits||'',
+          drivers: out.drivers||'', vehicles:{}, fmcsa:true, fmcsaSyncedAt: new Date().toISOString()
+        };
+        currentCustomer = rec;
+        fillCustomerFields(rec);
+        await dbSet('customer:'+dot, rec);
+        statusEl.innerHTML = '<div class="ok">Pulled from FMCSA and saved.</div>';
+        renderVehicleChips(rec);
+        return;
+      }catch(err){
+        if(err && err.notFound){
+          // No FMCSA record for this USDOT — let them enter it manually and save.
+          statusEl.innerHTML = `<div class="lookup-action">
+            <div class="lt">No FMCSA record for DOT ${dot}</div>
+            <p>This USDOT didn't return data. Double-check the number, or fill in the carrier below and tap <b>Save Carrier to Records</b> — it'll auto-fill next time.</p>
+            <div class="row"><button class="primary small" id="openSafer" type="button">Open SAFER for DOT ${dot}</button></div>
+          </div>`;
+        } else {
+          // Backend unreachable (often waking from sleep) — suggest retry.
+          statusEl.innerHTML = `<div class="lookup-action">
+            <div class="lt">Lookup didn't go through</div>
+            <p>The lookup service may be waking up. Tap <b>Lookup</b> again in a few seconds. If it keeps failing, fill in the carrier below and tap <b>Save Carrier to Records</b>.</p>
+            <div class="row"><button class="primary small" id="openSafer" type="button">Open SAFER for DOT ${dot}</button></div>
+          </div>`;
+        }
+        $('openSafer').addEventListener('click', ()=> openSafer(dot));
+        currentCustomer = { usdot: dot, fmcsa:false, vehicles:{} };
+        return;
+      }
+    }
+  }
+  function openSafer(dot){
+    window.open('https://safer.fmcsa.dot.gov/query.asp?searchtype=ANY&query_type=queryCarrierSnapshot&query_param=USDOT_NUMBER&original_query_param=NAME&query_string='+dot+'&original_query_string=', '_blank');
+  }
+  function fillCustomerFields(c){
+    $('custName').value = c.legalName || '';
+    $('custDba').value = c.dba || '';
+    $('custAddr').value = c.addr || '';
+    $('custCity').value = c.city || '';
+    $('custState').value = c.state || '';
+    $('custZip').value = c.zip || '';
+    $('custPhone').value = c.phone || '';
+    let meta = [];
+    if(c.mcNumber) meta.push('MC# '+c.mcNumber);
+    if(c.safetyRating) meta.push('Safety: '+c.safetyRating);
+    if(c.powerUnits) meta.push(c.powerUnits+' power units');
+    if(c.fmcsaSyncedAt) meta.push('FMCSA sync '+new Date(c.fmcsaSyncedAt).toLocaleDateString());
+    $('dotMeta').textContent = meta.join('  ·  ');
+  }
+  function renderVehicleChips(c){
+    const wrap = $('vehicleChips');
+    wrap.innerHTML = '';
+    const veh = c.vehicles || {};
+    const keys = Object.keys(veh);
+    if(!keys.length) return;
+    const lbl = document.createElement('div');
+    lbl.className = 'hint';
+    lbl.style.marginTop = '8px';
+    lbl.textContent = 'On file for this fleet — tap to reuse:';
+    wrap.appendChild(lbl);
+    keys.forEach(unit=>{
+      const v = veh[unit];
+      const chip = document.createElement('span');
+      chip.className = 'vehicle-chip';
+      chip.textContent = 'Unit '+unit+' — '+(v.year||'')+' '+(v.make||'')+' '+(v.model||'')+' ('+v.vin.slice(-6)+')';
+      chip.addEventListener('click', ()=>{
+        $('unitNum').value = unit;
+        $('vin').value = v.vin;
+        applyDecoded(v);
+      });
+      wrap.appendChild(chip);
+    });
+  }
+
+  // ---------- VIN decode ----------
+  $('btnDecodeVin').addEventListener('click', decodeVin);
+  $('vin').addEventListener('input', e=>{ e.target.value = e.target.value.toUpperCase(); });
+  async function decodeVin(){
+    const vin = $('vin').value.trim().toUpperCase();
+    const statusEl = $('vinStatus');
+    statusEl.innerHTML = '';
+    if(vin.length !== 17){ statusEl.innerHTML = '<div class="err">VIN must be 17 characters.</div>'; return; }
+    statusEl.innerHTML = '<div class="hint"><span class="spin"></span>Decoding VIN…</div>';
+    try{
+      const resp = await fetch('https://vpic.nhtsa.dot.gov/api/vehicles/DecodeVinValuesExtended/'+vin+'?format=json');
+      if(!resp.ok) throw new Error('HTTP '+resp.status);
+      const data = await resp.json();
+      const r = (data.Results && data.Results[0]) || {};
+      if(r.ErrorCode && r.ErrorCode !== '0' && !r.Make){
+        statusEl.innerHTML = '<div class="err">'+(r.ErrorText || 'Could not decode VIN.')+'</div>';
+        return;
+      }
+      const decoded = {
+        vin: vin,
+        year: r.ModelYear || '',
+        make: r.Make || '',
+        model: r.Model || '',
+        type: r.VehicleType || '',
+        body: r.BodyClass || '',
+        gvwr: r.GVWR || '',
+        engine: [r.EngineCylinders && r.EngineCylinders+' cyl', r.DisplacementL && r.DisplacementL+'L', r.FuelTypePrimary].filter(Boolean).join(' '),
+        drive: r.DriveType || ''
+      };
+      applyDecoded(decoded);
+      statusEl.innerHTML = '<div class="ok">Decoded via NHTSA vPIC.</div>';
+
+      // attach to current customer's vehicle roster if we have one
+      if(currentCustomer && $('unitNum').value.trim()){
+        const dot = currentCustomer.usdot;
+        if(!currentCustomer.vehicles) currentCustomer.vehicles = {};
+        currentCustomer.vehicles[$('unitNum').value.trim()] = decoded;
+        await dbSet('customer:'+dot, currentCustomer);
+      }
+    }catch(err){
+      statusEl.innerHTML = '<div class="err">VIN decode failed — check connection and try again.</div>';
+    }
+  }
+  function applyDecoded(d){
+    let parts = [d.year, d.make, d.model].filter(Boolean).join(' ');
+    let extra = [d.type, d.body, d.engine, d.drive, d.gvwr].filter(Boolean).join(' · ');
+    $('vinDecoded').innerHTML = '<b style="text-transform:none">'+escapeHtml(parts)+'</b>'+(extra? '<br>'+escapeHtml(extra) : '');
+    $('vin').value = d.vin || $('vin').value;
+  }
+
+  // ---------- save invoice ----------
+  $('btnSaveInvoice').addEventListener('click', saveInvoice);
+  $('btnNewInvoice').addEventListener('click', resetInvoiceForm);
+
+  async function saveInvoice(){
+    const statusEl = $('saveStatus');
+    const dot = $('usdot').value.trim();
+    const name = $('custName').value.trim();
+    if(!dot || !name){ statusEl.innerHTML = '<div class="err">USDOT and customer name are required.</div>'; return; }
+    if(!lineItems.length || lineItems.every(l=>!l.desc && !l.qty && !l.rate)){
+      statusEl.innerHTML = '<div class="err">Add at least one line item.</div>'; return;
+    }
+    const totals = calcTotals();
+    const num = editingInvoiceId || settings.nextInvoice;
+
+    const invoice = {
+      id: num,
+      date: $('svcDate').value || new Date().toISOString().slice(0,10),
+      usdot: dot,
+      custName: name,
+      custDba: $('custDba').value.trim(),
+      custAddr: $('custAddr').value.trim(),
+      custCity: $('custCity').value.trim(),
+      custState: $('custState').value.trim(),
+      custZip: $('custZip').value.trim(),
+      custPhone: $('custPhone').value.trim(),
+      unit: $('unitNum').value.trim(),
+      vin: $('vin').value.trim(),
+      vehicleDesc: $('vinDecoded').textContent.trim(),
+      svcLoc: $('svcLoc').value.trim(),
+      lineItems: JSON.parse(JSON.stringify(lineItems)),
+      subtotal: totals.sub,
+      taxPct: totals.taxPct,
+      tax: totals.tax,
+      total: totals.total,
+      notes: $('notes').value.trim(),
+      paid: false,
+      createdAt: new Date().toISOString()
+    };
+
+    const savedInv = await dbSet('invoice:'+num, invoice);
+
+    // update / create customer record
+    const custRec = currentCustomer && currentCustomer.usdot === dot ? currentCustomer : (await dbGet('customer:'+dot)) || { usdot: dot, vehicles:{} };
+    custRec.legalName = name;
+    custRec.dba = invoice.custDba || custRec.dba;
+    custRec.addr = invoice.custAddr || custRec.addr;
+    custRec.city = invoice.custCity || custRec.city;
+    custRec.state = invoice.custState || custRec.state;
+    custRec.zip = invoice.custZip || custRec.zip;
+    custRec.phone = invoice.custPhone || custRec.phone;
+    if(!custRec.vehicles) custRec.vehicles = {};
+    if(invoice.unit && invoice.vin){
+      custRec.vehicles[invoice.unit] = custRec.vehicles[invoice.unit] || {};
+      custRec.vehicles[invoice.unit].vin = invoice.vin;
+      Object.assign(custRec.vehicles[invoice.unit], extractDecodedFromText(invoice.vehicleDesc, custRec.vehicles[invoice.unit]));
+    }
+    custRec.lastInvoiceAt = invoice.createdAt;
+    custRec.invoiceCount = (custRec.invoiceCount||0) + (editingInvoiceId? 0 : 1);
+    await dbSet('customer:'+dot, custRec);
+
+    if(!editingInvoiceId){
+      settings.nextInvoice = num + 1;
+      await dbSet('settings', settings);
+      $('setNextInvoice').value = settings.nextInvoice;
+    }
+
+    if(savedInv){
+      statusEl.innerHTML = '<div class="ok">Invoice #'+num+' saved.</div> ';
+      const printBtn = document.createElement('button');
+      printBtn.className = 'primary small';
+      printBtn.style.marginLeft = '6px';
+      printBtn.textContent = 'Print / PDF';
+      printBtn.addEventListener('click', ()=> printInvoice(invoice));
+      statusEl.appendChild(printBtn);
+      editingInvoiceId = null;
+    } else {
+      statusEl.innerHTML = `<div class="err">Couldn't save — cloud storage unavailable. Try again in a moment.</div>`;
+    }
+  }
+
+  function extractDecodedFromText(){ return {}; } // vehicles roster already updated at decode time
+
+  function resetInvoiceForm(){
+    $('usdot').value=''; $('custName').value=''; $('custDba').value=''; $('custAddr').value='';
+    $('custCity').value=''; $('custState').value=''; $('custZip').value=''; $('custPhone').value='';
+    $('dotMeta').textContent=''; $('dotStatus').innerHTML=''; $('vehicleChips').innerHTML='';
+    $('unitNum').value=''; $('vin').value=''; $('vinDecoded').innerHTML=''; $('vinStatus').innerHTML='';
+    $('svcLoc').value=''; $('notes').value=''; $('saveStatus').innerHTML='';
+    $('svcDate').value = new Date().toISOString().slice(0,10);
+    $('taxRate').value = settings.taxRate;
+    currentCustomer = null; editingInvoiceId = null;
+    lineItems = [{desc:'',qty:1,rate:0}];
+    renderLines();
+  }
+
+  // ---------- history ----------
+  let allInvoices = [];
+  async function renderHistory(){
+    const wrap = $('historyList');
+    wrap.innerHTML = '<div class="empty"><span class="spin"></span>Loading…</div>';
+    const keys = await dbList('invoice:');
+    const items = [];
+    for(const k of keys){
+      const inv = await dbGet(k);
+      if(inv) items.push(inv);
+    }
+    items.sort((a,b)=> (b.id||0)-(a.id||0));
+    allInvoices = items;
+    drawHistory(items);
+  }
+  function drawHistory(items){
+    const wrap = $('historyList');
+    if(!items.length){ wrap.innerHTML = '<div class="empty">No invoices yet.</div>'; return; }
+    wrap.innerHTML='';
+    items.forEach(inv=>{
+      const row = document.createElement('div');
+      row.className = 'list-item';
+      row.innerHTML = `
+        <div>
+          <div class="name">#${inv.id} — ${escapeHtml(inv.custName)}</div>
+          <div class="meta">DOT ${escapeHtml(inv.usdot)} · Unit ${escapeHtml(inv.unit||'—')} · ${inv.date}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="mono">${money(inv.total)}</div>
+          <span class="badge ${inv.paid?'paid':'unpaid'}">${inv.paid?'Paid':'Unpaid'}</span>
+        </div>`;
+      row.addEventListener('click', ()=> openInvoice(inv));
+      wrap.appendChild(row);
+    });
+  }
+  $('historySearch').addEventListener('input', e=>{
+    const q = e.target.value.toLowerCase();
+    drawHistory(allInvoices.filter(inv =>
+      String(inv.id).includes(q) || (inv.usdot||'').includes(q) ||
+      (inv.custName||'').toLowerCase().includes(q) || (inv.vin||'').toLowerCase().includes(q) ||
+      (inv.unit||'').toLowerCase().includes(q)
+    ));
+  });
+  function openInvoice(inv){
+    const bg = document.createElement('div'); bg.className='modal-bg';
+    const m = document.createElement('div'); m.className='modal';
+    m.innerHTML = `
+      <div class="eyebrow">Invoice #${inv.id} — ${escapeHtml(inv.custName)}</div>
+      <div class="hint">DOT ${escapeHtml(inv.usdot)} · ${inv.date} · Unit ${escapeHtml(inv.unit||'—')} · ${escapeHtml(inv.vin||'')}</div>
+      <table style="margin-top:10px">
+        <thead><tr><th>Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr></thead>
+        <tbody>${inv.lineItems.map(li=>`<tr><td>${escapeHtml(li.desc)}</td><td class="num">${li.qty}</td><td class="num">${money(li.rate)}</td><td class="num">${money(li.qty*li.rate)}</td></tr>`).join('')}</tbody>
+      </table>
+      <div class="totals">
+        <div class="line"><span>Subtotal</span><span class="mono">${money(inv.subtotal)}</span></div>
+        <div class="line"><span>Tax (${inv.taxPct}%)</span><span class="mono">${money(inv.tax)}</span></div>
+        <div class="line grand"><span>Total</span><span class="mono">${money(inv.total)}</span></div>
+      </div>
+      ${inv.notes? '<div class="hint" style="margin-top:8px;text-transform:none">Notes: '+escapeHtml(inv.notes)+'</div>':''}
+      <div class="row" style="margin-top:14px">
+        <button class="primary small" data-act="print">Print / PDF</button>
+        <button class="small" data-act="paid">${inv.paid?'Mark Unpaid':'Mark Paid'}</button>
+        <button class="small ghost" data-act="close">Close</button>
+      </div>
+    `;
+    m.querySelector('[data-act="print"]').addEventListener('click', ()=> printInvoice(inv));
+    m.querySelector('[data-act="paid"]').addEventListener('click', async ()=>{
+      inv.paid = !inv.paid;
+      await dbSet('invoice:'+inv.id, inv);
+      bg.remove();
+      renderHistory();
+    });
+    m.querySelector('[data-act="close"]').addEventListener('click', ()=> bg.remove());
+    bg.addEventListener('click', e=>{ if(e.target===bg) bg.remove(); });
+    bg.appendChild(m);
+    document.body.appendChild(bg);
+  }
+
+  // ---------- customers ----------
+  let allCustomers = [];
+  async function renderCustomers(){
+    const wrap = $('customerList');
+    wrap.innerHTML = '<div class="empty"><span class="spin"></span>Loading…</div>';
+    const keys = await dbList('customer:');
+    const items = [];
+    for(const k of keys){
+      const c = await dbGet(k);
+      if(c) items.push(c);
+    }
+    items.sort((a,b)=> (a.legalName||'').localeCompare(b.legalName||''));
+    allCustomers = items;
+    drawCustomers(items);
+  }
+  function drawCustomers(items){
+    const wrap = $('customerList');
+    if(!items.length){ wrap.innerHTML = '<div class="empty">No customers saved yet.</div>'; return; }
+    wrap.innerHTML='';
+    items.forEach(c=>{
+      const vehCount = Object.keys(c.vehicles||{}).length;
+      const row = document.createElement('div');
+      row.className = 'list-item';
+      row.innerHTML = `
+        <div>
+          <div class="name">${escapeHtml(c.legalName||'(unnamed)')} ${vehCount>1?'<span class="badge fleet">Fleet</span>':''}</div>
+          <div class="meta">DOT ${escapeHtml(c.usdot)} · ${escapeHtml(c.city||'')}${c.state? ', '+escapeHtml(c.state):''} · ${vehCount} unit${vehCount===1?'':'s'} on file</div>
+        </div>
+        <div class="meta">${c.invoiceCount||0} invoice${(c.invoiceCount||0)===1?'':'s'}</div>`;
+      row.addEventListener('click', ()=> openCustomer(c));
+      wrap.appendChild(row);
+    });
+  }
+  $('custSearch').addEventListener('input', e=>{
+    const q = e.target.value.toLowerCase();
+    drawCustomers(allCustomers.filter(c =>
+      (c.legalName||'').toLowerCase().includes(q) || (c.usdot||'').includes(q) || (c.city||'').toLowerCase().includes(q)
+    ));
+  });
+  function openCustomer(c){
+    const bg = document.createElement('div'); bg.className='modal-bg';
+    const m = document.createElement('div'); m.className='modal';
+    const veh = c.vehicles||{};
+    m.innerHTML = `
+      <div class="eyebrow">${escapeHtml(c.legalName||'')}</div>
+      <div class="hint">DOT ${escapeHtml(c.usdot)} · ${escapeHtml(c.addr||'')} ${escapeHtml(c.city||'')} ${escapeHtml(c.state||'')} ${escapeHtml(c.zip||'')}</div>
+      <div class="hint">${c.phone? 'Phone '+escapeHtml(c.phone):''}${c.mcNumber? ' · MC# '+escapeHtml(c.mcNumber):''}${c.safetyRating? ' · Safety: '+escapeHtml(c.safetyRating):''}</div>
+      <label style="margin-top:10px">Fleet Units on File</label>
+      ${Object.keys(veh).length? '<table><thead><tr><th>Unit</th><th>VIN</th><th>Vehicle</th></tr></thead><tbody>'+
+        Object.entries(veh).map(([u,v])=>`<tr><td class="mono">${escapeHtml(u)}</td><td class="mono">${escapeHtml(v.vin||'')}</td><td>${escapeHtml([v.year,v.make,v.model].filter(Boolean).join(' '))}</td></tr>`).join('')+
+        '</tbody></table>' : '<div class="hint">No units recorded yet.</div>'}
+      <div class="row" style="margin-top:14px">
+        <button class="primary small" data-act="newinv">New Invoice For This Customer</button>
+        <button class="small ghost" data-act="close">Close</button>
+      </div>
+    `;
+    m.querySelector('[data-act="newinv"]').addEventListener('click', ()=>{
+      bg.remove();
+      document.querySelector('.tabbtn[data-tab="invoice"]').click();
+      resetInvoiceForm();
+      $('usdot').value = c.usdot;
+      lookupUSDOT();
+    });
+    m.querySelector('[data-act="close"]').addEventListener('click', ()=> bg.remove());
+    bg.addEventListener('click', e=>{ if(e.target===bg) bg.remove(); });
+    bg.appendChild(m);
+    document.body.appendChild(bg);
+  }
+
+  // ---------- print ----------
+  function printInvoice(inv){
+    $('pShopName').textContent = settings.shopName || 'SHOP';
+    $('pShopInfo').innerHTML = [settings.shopAddr, [settings.shopCity, settings.shopState, settings.shopZip].filter(Boolean).join(', '), settings.shopPhone].filter(Boolean).join('<br>');
+    $('pInvoiceNum').textContent = '#'+inv.id;
+    $('pDate').textContent = inv.date;
+    $('pCustName').textContent = inv.custName + (inv.custDba? ' / '+inv.custDba:'');
+    $('pCustAddr').textContent = [inv.custAddr, [inv.custCity, inv.custState, inv.custZip].filter(Boolean).join(', ')].filter(Boolean).join(' — ');
+    $('pCustDot').textContent = 'USDOT '+inv.usdot;
+    $('pVehicle').textContent = (inv.unit? 'Unit '+inv.unit+' — ':'') + (inv.vehicleDesc||'');
+    $('pVin').textContent = inv.vin? 'VIN '+inv.vin : '';
+    $('pLoc').textContent = inv.svcLoc || '—';
+    $('pLines').innerHTML = inv.lineItems.map(li=>`<tr><td>${escapeHtml(li.desc)}</td><td class="num">${li.qty}</td><td class="num">${money(li.rate)}</td><td class="num">${money(li.qty*li.rate)}</td></tr>`).join('');
+    $('pSub').textContent = money(inv.subtotal);
+    $('pTax').textContent = money(inv.tax)+' ('+inv.taxPct+'%)';
+    $('pTotal').textContent = money(inv.total);
+    $('pStamp').innerHTML = '<span class="stamp '+(inv.paid?'paid':'unpaid')+'">'+(inv.paid?'PAID':'UNPAID')+'</span>';
+    $('pNotes').textContent = inv.notes? 'Notes: '+inv.notes : '';
+    window.print();
+  }
+
+  // ---------- settings ----------
+  async function loadSettings(){
+    const s = await dbGet('settings');
+    if(s) settings = Object.assign(settings, s);
+    $('setShopName').value = settings.shopName;
+    $('setShopAddr').value = settings.shopAddr;
+    $('setShopCity').value = settings.shopCity;
+    $('setShopState').value = settings.shopState;
+    $('setShopZip').value = settings.shopZip;
+    $('setShopPhone').value = settings.shopPhone;
+    $('setTaxRate').value = settings.taxRate;
+    $('setNextInvoice').value = settings.nextInvoice;
+    if(settings.shopName){
+      $('shopNameHdr').textContent = settings.shopName.toUpperCase();
+      $('shopSubHdr').textContent = [settings.shopAddr, settings.shopCity+(settings.shopState?', '+settings.shopState:''), settings.shopPhone].filter(Boolean).join(' · ');
+    }
+  }
+  $('btnSaveSettings').addEventListener('click', async ()=>{
+    settings.shopName = $('setShopName').value.trim();
+    settings.shopAddr = $('setShopAddr').value.trim();
+    settings.shopCity = $('setShopCity').value.trim();
+    settings.shopState = $('setShopState').value.trim();
+    settings.shopZip = $('setShopZip').value.trim();
+    settings.shopPhone = $('setShopPhone').value.trim();
+    settings.taxRate = parseFloat($('setTaxRate').value)||0;
+    settings.nextInvoice = parseInt($('setNextInvoice').value)||settings.nextInvoice;
+    await dbSet('settings', settings);
+    $('shopNameHdr').textContent = (settings.shopName||'SHOP INVOICING').toUpperCase();
+    $('shopSubHdr').textContent = [settings.shopAddr, settings.shopCity+(settings.shopState?', '+settings.shopState:''), settings.shopPhone].filter(Boolean).join(' · ') || 'Mobile road service & fleet maintenance';
+    $('settingsStatus').innerHTML = '<div class="ok">Settings saved.</div>';
+  });
+
+  // ---------- init ----------
+  (async function init(){
+    await checkStorage();
+    await loadSettings();
+    $('svcDate').value = new Date().toISOString().slice(0,10);
+    $('taxRate').value = settings.taxRate;
+    lineItems = [{desc:'',qty:1,rate:0}];
+    renderLines();
+  })();
+
+})();
+</script>
+</body>
+</html>
